@@ -22,7 +22,7 @@ const LoginForm = () => {
       setLoading(true);
       await loginService(email, password)
       // Replace with your actual login logic
-      console("Logging in with:", { email, password });
+     
 
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
