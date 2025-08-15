@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router";
-import { useAuth } from "../../context/AuthContext";
+import { FiEye, FiEyeOff } from "react-icons/fi";
+import { useAuth } from "../../context/authContext";
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { login, networkError } = useAuth();
+  const { login, error: authError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState(null);
@@ -15,14 +16,6 @@ const LoginForm = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const isMountedRef = useRef(true);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
 
   const validateForm = () => {
     const errors = {};
@@ -62,141 +55,128 @@ const LoginForm = () => {
     }
   };
 
-const loginHandler = async (e) => {
-  e.preventDefault();
-  setMessage(null);
-  
-  if (!validateForm()) return;
-
-  setLoading(true);
-  setIsError(false);
-
-  try {
-    const result = await login(email, password);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    if (result.success) {
-      setMessage("Login successful! Redirecting...");
-      setIsError(false);
-      setTimeout(() => navigate("/homepage"), 1500);
-    } else {
-      throw new Error(result.error || "Login failed");
+    if (!validateForm()) {
+      return;
     }
-  } catch (err) {
-    setMessage(
-      networkError 
-        ? "Network error - please check your connection"
-        : err.message || "Login failed. Please try again."
-    );
-    setIsError(true);
-  } finally {
-    setLoading(false);
-  }
-};
+
+    try {
+      setLoading(true);
+      setMessage(null);
+      setIsError(false);
+
+      const success = await login(email, password);
+      if (success) {
+        navigate("/homepage");
+      } else {
+        setMessage("Invalid email or password");
+        setIsError(true);
+      }
+    } catch (err) {
+      setMessage(err.message || "Login failed. Please try again.");
+      setIsError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-4">
-      {/* Animated Logo */}
-      <div className="mb-12 animate-fade-in">
-        <NavLink
-          to="/"
-          className="flex items-center gap-3 group transform transition-transform duration-300 hover:scale-105"
-          aria-label="Home"
-        >
-          <div className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-extrabold text-2xl w-14 h-14 flex items-center justify-center rounded-xl group-hover:shadow-xl transition-all duration-300">
+      {/* Logo */}
+      <div className="mb-12">
+        <NavLink to="/" className="flex items-center gap-3 group" aria-label="Home">
+          <div className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-extrabold text-2xl w-14 h-14 flex items-center justify-center rounded-xl group-hover:shadow-lg transition-all duration-300">
             SK
           </div>
           <div className="leading-tight text-left">
-            <p className="text-sm font-medium tracking-wider text-gray-500 uppercase">
-              Swedru
-            </p>
-            <p className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
-              Konnect
-            </p>
+            <p className="text-sm font-medium tracking-wider text-gray-500 uppercase">Swedru</p>
+            <p className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">Konnect</p>
           </div>
         </NavLink>
       </div>
 
-      {/* Glassmorphism Form Container */}
-      <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden p-0 border border-white/20">
+      {/* Form Container */}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
         <div className="p-8">
-          <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Welcome back
-            </h1>
-            <p className="text-gray-500/90">Sign in to access your dashboard</p>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome back</h1>
+            <p className="text-gray-500">Sign in to access your account</p>
           </div>
 
-          {message && (
-            <div
-              className={`mb-6 p-3 rounded-lg text-sm ${
-                isError ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
-              }`}
-            >
-              {message}
-              {networkError && (
-                <p className="mt-1 text-xs">Attempting to reconnect...</p>
-              )}
+          {(message || authError) && (
+            <div className={`mb-6 p-4 rounded-lg ${isError || authError ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  {(isError || authError) ? (
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{message || authError}</p>
+                </div>
+              </div>
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={loginHandler} noValidate>
-            <div className="space-y-1">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700/90"
-              >
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={email}
-                autoComplete="email"
-                required
-                onChange={handleEmailChange}
-                className={`w-full px-4 py-3 bg-white/80 border ${
-                  formErrors.email ? "border-red-300" : "border-gray-200/70"
-                } rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all placeholder-gray-400/70`}
-                placeholder="your@email.com"
-                disabled={loading}
-              />
-              {formErrors.email && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
-              )}
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={handleEmailChange}
+                  className={`w-full px-4 py-3 border ${formErrors.email ? "border-red-300" : "border-gray-300"} rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
+                  placeholder="your@email.com"
+                  disabled={loading}
+                />
+                {formErrors.email && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700/90"
-              >
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <div className="relative">
+              <div className="mt-1 relative">
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={handlePasswordChange}
-                  className={`w-full px-4 py-3 bg-white/80 border ${
-                    formErrors.password ? "border-red-300" : "border-gray-200/70"
-                  } rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all placeholder-gray-400/70`}
+                  className={`w-full px-4 py-3 border ${formErrors.password ? "border-red-300" : "border-gray-300"} rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
                   placeholder="••••••••"
                   disabled={loading}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
                 >
                   {showPassword ? (
-                    <EyeIcon className="h-5 w-5" />
+                    <FiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-500" />
                   ) : (
-                    <EyeOffIcon className="h-5 w-5" />
+                    <FiEye className="h-5 w-5 text-gray-400 hover:text-gray-500" />
                   )}
                 </button>
               </div>
@@ -205,91 +185,59 @@ const loginHandler = async (e) => {
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full py-3.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl shadow-md hover transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-purple-500/50 ${
-                loading ? "opacity-80 cursor-not-allowed" : ""
-              }`}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                "Sign In"
-              )}
-            </button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  Remember me
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <NavLink to="/forgot-password" className="font-medium text-purple-600 hover:text-purple-500">
+                  Forgot password?
+                </NavLink>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
+              </button>
+            </div>
           </form>
         </div>
 
-        <div className="p-6 text-center bg-gray-50/30">
-          <p className="text-gray-600/90">
-            New to Swedru Konnect?{" "}
-            <NavLink
-              to="/register"
-              className="font-medium text-purple-600 hover:text-purple-700 transition-colors duration-200"
-            >
-              Create account
+        <div className="px-8 py-6 bg-gray-50 border-t border-gray-100">
+          <div className="text-sm text-center text-gray-600">
+            Don't have an account?{" "}
+            <NavLink to="/register" className="font-medium text-purple-600 hover:text-purple-500">
+              Sign up
             </NavLink>
-          </p>
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
-// Simple eye icons
-const EyeIcon = ({ className }) => (
-  <svg
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-    <circle cx="12" cy="12" r="3"></circle>
-  </svg>
-);
-
-const EyeOffIcon = ({ className }) => (
-  <svg
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-    <line x1="1" y1="1" x2="23" y2="23"></line>
-  </svg>
-);
 
 export default LoginForm;

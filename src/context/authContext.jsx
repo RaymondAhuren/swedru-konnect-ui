@@ -1,4 +1,3 @@
-// AuthContext.js
 import React, { createContext, useState, useEffect, useCallback, useRef, useContext, useMemo } from "react";
 import { loginService, logoutService, getUserDetails, refreshTokenService } from "../services/userServices";
 
@@ -6,11 +5,11 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // only for initial load
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const isRefreshingRef = useRef(false);
-  const hasCheckedAuthRef = useRef(false); // track if initial check done
+  const hasCheckedAuthRef = useRef(false);
 
   // Track user activity
   useEffect(() => {
@@ -36,45 +35,45 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Wrapper for calling backend services
-  const authFetch = useCallback(
-    async (serviceFn, ...args) => {
-      try {
-        let response = await serviceFn(...args);
+  // Auth fetch wrapper
+  const authFetch = useCallback(async (serviceFn, ...args) => {
+    try {
+      let response = await serviceFn(...args);
 
-        if (response?.status === 401 || response?.message === "Session expired") {
-          await silentRefresh();
-          response = await serviceFn(...args);
-        }
-        return response;
-      } catch {
-        setUser(null);
-        setError(null);
-        return null;
+      if (response?.status === 401 || response?.message === "Session expired") {
+        await silentRefresh();
+        response = await serviceFn(...args);
       }
-    },
-    [silentRefresh]
-  );
 
-  // Login
-  const login = useCallback(
-    async (email, password) => {
-      setError(null);
-      try {
-        await authFetch(loginService, email, password);
-        const data = await getUserDetails();
-        setUser(data.data || null);
-        setLastActivity(Date.now());
-        return data;
-      } catch {
-        setUser(null);
-        return null;
-      }
-    },
-    [authFetch]
-  );
+      if (!response) throw new Error("Request failed");
+      return response;
+    } catch (err) {
+      if (serviceFn !== loginService) setUser(null);
+      throw err;
+    }
+  }, [silentRefresh]);
 
-  // Logout
+  // Login function
+  const login = useCallback(async (email, password) => {
+    setError(null);
+    try {
+      const loginResponse = await authFetch(loginService, email, password);
+      if (!loginResponse) throw new Error("Login failed");
+      
+      const userData = await getUserDetails();
+      if (!userData?.data) throw new Error("Failed to fetch user details");
+      
+      setUser(userData.data);
+      setLastActivity(Date.now());
+      return true;
+    } catch (err) {
+      setUser(null);
+      setError(err.message || "Invalid credentials");
+      return false;
+    }
+  }, [authFetch]);
+
+  // Logout function
   const logout = useCallback(async () => {
     try {
       await authFetch(logoutService);
@@ -83,7 +82,7 @@ export function AuthProvider({ children }) {
     }
   }, [authFetch]);
 
-  // Check auth
+  // Check auth status
   const checkAuth = useCallback(async (isInitial = false) => {
     if (isInitial) setLoading(true);
     setError(null);
@@ -107,7 +106,7 @@ export function AuthProvider({ children }) {
     }
   }, [silentRefresh]);
 
-  // Refresh every 14 min if active
+  // Auto-refresh logic
   useEffect(() => {
     if (!user) return;
     const MAX_INACTIVITY_TIME = 60 * 60 * 1000;
@@ -121,38 +120,32 @@ export function AuthProvider({ children }) {
     return () => clearInterval(interval);
   }, [user, lastActivity, silentRefresh]);
 
-  // First check + tab visibility refresh
+  // Initial check + visibility change
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && hasCheckedAuthRef.current) {
-        checkAuth(false); // silent
+        checkAuth(false);
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    checkAuth(true); // initial load
-
+    checkAuth(true);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [checkAuth]);
 
-  const value = useMemo(
-    () => ({
-      user,
-      loading,
-      error,
-      login,
-      logout,
-      checkAuth,
-      authFetch,
-      isAuthenticated: !!user,
-    }),
-    [user, loading, error, login, logout, checkAuth, authFetch]
-  );
+  const value = useMemo(() => ({
+    user,
+    loading,
+    error,
+    login,
+    logout,
+    checkAuth,
+    authFetch,
+    isAuthenticated: !!user,
+  }), [user, loading, error, login, logout, checkAuth, authFetch]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// Hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
