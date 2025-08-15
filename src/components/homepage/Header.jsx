@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { NavLink, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiSearch, FiMenu, FiChevronDown, FiX, FiUser, FiLogOut, FiPlus } from "react-icons/fi";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext";
 import { useProducts } from "../../context/ProductContext";
 
 // Debounce function to limit how often we update filters
