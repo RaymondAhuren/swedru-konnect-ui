@@ -13,7 +13,7 @@ import {
   FiMeh,
   FiSearch
 } from "react-icons/fi";
-import { useProducts } from "../../context/ProductContext";
+import { useProducts } from "../../context/productContext";
 
 const Marketplace = () => {
   const {
