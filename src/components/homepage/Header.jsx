@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiSearch, FiMenu, FiChevronDown, FiX, FiUser, FiLogOut, FiPlus } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
-import { useProducts } from "../../context/ProductContext";
+import { useProducts } from "../../context/productContext";
 
 // Debounce function to limit how often we update filters
 const debounce = (func, wait) => {
